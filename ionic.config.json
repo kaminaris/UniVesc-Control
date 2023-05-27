@@ -1,0 +1,7 @@
+{
+  "name": "UniVescDisplayControl",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
