@@ -8,7 +8,41 @@
 
 <ion-content [fullscreen]="true">
 
-<ion-button (click)="searchBt()">Search</ion-button>
-<ion-button (click)="writeBt()">Write</ion-button>
+	<ion-button (click)="searchBt()">Search</ion-button>
+	<ion-button (click)="writeBt()">Ping</ion-button>
+	<ion-button (click)="getChipInfo()">GetChipInfo</ion-button>
+	<ion-button (click)="getClock()">GetClock</ion-button>
+	<ion-button (click)="getEeprom()">GetEeprom</ion-button>
+	<ion-button (click)="readFiles()">Read Files</ion-button>
+	<ion-button (click)="beepTest()">beepTest</ion-button>
+	<ion-button (click)="readFile()">readFile</ion-button>
 	dsadas
+
+	<input
+		type="file"
+		id="file-upload"
+		(change)="setFile($event)"
+	/>
+
+	Spiff write
+	<input
+		type="file"
+		id="file-upload2"
+		(change)="setFile2($event)"
+	/>
+
+	<div>
+		<ion-range aria-label="Range with ticks" [ticks]="true" [snaps]="true" [min]="0" [max]="21"
+			[(ngModel)]="volume"
+		></ion-range>
+		{{ volume }}
+		<ion-button (click)="setVolume()">set volume</ion-button>
+	</div>
+
+	<div>
+		<ion-button (click)="playTest()">playTest</ion-button>
+	</div>
+	<pre style="height: 50vh;" #scroller>
+		{{ logText }}
+	</pre>
 </ion-content>

@@ -1,7 +1,8 @@
-import { enableProdMode }                                                    from '@angular/core';
-import { platformBrowserDynamic }                                            from '@angular/platform-browser-dynamic';
-import { BinaryConverter, FloatConverter, NumberConverter, StringConverter } from 'binary-serializer-next';
+import { enableProdMode }         from '@angular/core';
+import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+
 import { AppModule }                                                         from './app/AppModule';
+import { BinaryConverter, FloatConverter, NumberConverter, StringConverter } from './app/BinarySerializer';
 
 import { environment } from './environments/environment';
 

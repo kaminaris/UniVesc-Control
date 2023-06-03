@@ -2,14 +2,16 @@
 import { EventEmitter, Injectable }                                   from '@angular/core';
 import { Platform }                                                   from '@ionic/angular';
 import { BleClient, BleDevice, dataViewToNumbers, numbersToDataView } from '@capacitor-community/bluetooth-le';
+import { Subscription }                                               from 'rxjs';
 
-const Delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+export const Delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 @Injectable({ providedIn: 'root' })
 export class BluetoothTransport {
 	static SRD_SERVICE = '9c12d201-cbc3-413b-963b-9e49ff7e7d31';
 	static CONTROL_POINT = '9c12d202-cbc3-413b-963b-9e49ff7e7d31';
 	static WRITE_POINT = '9c12d203-cbc3-413b-963b-9e49ff7e7d31';
+	static DEBUG_POINT = '9c12d204-cbc3-413b-963b-9e49ff7e7d31';
 
 	busy = false;
 	bleDevice?: BleDevice;
@@ -17,9 +19,11 @@ export class BluetoothTransport {
 	gattServer?: BluetoothRemoteGATTServer;
 	ctrlChar?: BluetoothRemoteGATTCharacteristic;
 	writeChar?: BluetoothRemoteGATTCharacteristic;
+	debugChar?: BluetoothRemoteGATTCharacteristic;
 
 	lastData: number[] = [];
 	emData = new EventEmitter<any>(true);
+	emLog = new EventEmitter<number[]>(true);
 	emConnected = new EventEmitter<boolean>(true);
 
 	get connected(): boolean {
@@ -62,8 +66,18 @@ export class BluetoothTransport {
 
 		const data = a.target?.value ? dataViewToNumbers(a.target.value) : dataViewToNumbers(a);
 		this.emData.emit(data);
-		// console.log('we got sumtin', data);
+		console.log('we got sumtin', data);
 		this.lastData = data;
+	};
+
+	async debugResolver(a?: DataView | any) {
+		if (!a) {
+			console.log('BROKEN!', a);
+			return;
+		}
+
+		const data = a.target?.value ? dataViewToNumbers(a.target.value) : dataViewToNumbers(a);
+		this.emLog.emit(data);
 	};
 
 	async connectViaBrowser() {
@@ -79,9 +93,16 @@ export class BluetoothTransport {
 		this.ctrlChar = await btService.getCharacteristic(BluetoothTransport.CONTROL_POINT);
 		this.ctrlChar.addEventListener('characteristicvaluechanged', this.resolver.bind(this));
 
+		this.debugChar = await btService.getCharacteristic(BluetoothTransport.DEBUG_POINT);
+		this.debugChar.addEventListener('characteristicvaluechanged', this.debugResolver.bind(this));
+
 		await this.ctrlChar.startNotifications();
+		await this.debugChar.startNotifications();
 
 		this.writeChar = await btService.getCharacteristic(BluetoothTransport.WRITE_POINT);
+		console.log(this.ctrlChar, this.writeChar);
+		// await this.readPPCPValue(this.ctrlChar);
+		// await this.readPPCPValue(this.writeChar);
 		await Delay(1000);
 		await this.emConnected.emit(true);
 
@@ -251,27 +272,51 @@ export class BluetoothTransport {
 				BluetoothTransport.WRITE_POINT,
 				numbersToDataView(data)
 			);
+			this.busy = false;
 			return true;
 		}
 
 		if (this.device) {
-			await this.writeChar!.writeValue(new Uint8Array(data));
+			try {
+				await this.writeChar!.writeValueWithoutResponse(new Uint8Array(data));
+			}
+			catch (e) {
+				console.log(e);
+				this.busy = false;
+				return false;
+			}
+
+			this.busy = false;
 			return true;
 		}
 
-		return false;
 		this.busy = false;
+		return false;
 	}
 
-	async exchange(data: number[], timeout: number, timeStep: number): Promise<number[]> {
+	async readPPCPValue(characteristic: any) {
+		const value = await characteristic.readValue();
+		console.log('> Peripheral Preferred Connection Parameters: ');
+		console.log('  > Minimum Connection Interval: ' +
+			(value.getUint8(0) | value.getUint8(1) << 8) * 1.25 + 'ms');
+		console.log('  > Maximum Connection Interval: ' +
+			(value.getUint8(2) | value.getUint8(3) << 8) * 1.25 + 'ms');
+		console.log('  > Latency: ' +
+			(value.getUint8(4) | value.getUint8(5) << 8) + 'ms');
+		console.log('  > Connection Supervision Timeout Multiplier: ' +
+			(value.getUint8(6) | value.getUint8(7) << 8));
+	}
+
+	async exchange(data: number[], timeout: number): Promise<number[]> {
 		this.busy = true;
 
 		// console.log('EXCHANGE', data);
 		if (this.bleDevice) {
 			this.busy = true;
 			return new Promise(async (resolve, reject) => {
+				let sub: Subscription;
 				let timer = window.setTimeout(async () => {
-					this.emData.unsubscribe();
+					sub?.unsubscribe();
 					reject(new Error('Unable to send data' + JSON.stringify(data)));
 					this.busy = false;
 				}, timeout);
@@ -279,11 +324,11 @@ export class BluetoothTransport {
 				const resolver = async (a: number[]) => {
 					window.clearTimeout(timer);
 					resolve(a);
-					this.emData.unsubscribe();
+					sub?.unsubscribe();
 					this.busy = false;
 				};
 
-				this.emData.subscribe(resolver);
+				sub = this.emData.subscribe(resolver);
 
 				await BleClient.write(
 					this.bleDevice!.deviceId,
@@ -301,27 +346,28 @@ export class BluetoothTransport {
 					reject(null);
 					return;
 				}
-
+				let sub: Subscription;
 				let timer = window.setTimeout(() => {
-					this.emData.unsubscribe();
+					sub?.unsubscribe();
 					reject(new Error('Unable to send data' + JSON.stringify(data)));
 					this.busy = false;
 				}, timeout);
 
 				const resolver = async (a: number[]) => {
+					console.log('we got', a);
 					window.clearTimeout(timer);
-					this.emData.unsubscribe();
+					sub?.unsubscribe();
 					await Delay(1);
 					resolve(a);
 					this.busy = false;
 				};
 
-				this.emData.subscribe(resolver);
+				sub = this.emData.subscribe(resolver);
 				let retryCount = 0;
 				do {
 					retryCount++;
 					try {
-						await this.writeChar.writeValue(new Uint8Array(data));
+						await this.writeChar.writeValueWithoutResponse(new Uint8Array(data));
 						break;
 					}
 					catch (e) {
@@ -333,7 +379,7 @@ export class BluetoothTransport {
 
 						this.busy = false;
 						window.clearTimeout(timer);
-						this.emData.unsubscribe();
+						sub?.unsubscribe();
 						console.log(e);
 						reject(null);
 					}
