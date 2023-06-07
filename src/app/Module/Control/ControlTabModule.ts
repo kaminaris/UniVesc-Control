@@ -1,7 +1,8 @@
 import { IonicModule }       from '@ionic/angular';
 import { NgModule }          from '@angular/core';
-import { CommonModule }      from '@angular/common';
-import { FormsModule }       from '@angular/forms';
+import { CommonModule }                     from '@angular/common';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { SharedModule }                     from 'src/app/Module/Shared/SharedModule';
 import { ControlTabPage }    from './ControlTabPage';
 import { ControlTabRouting } from './ControlTabRouting';
 
@@ -10,7 +11,9 @@ import { ControlTabRouting } from './ControlTabRouting';
 		IonicModule,
 		CommonModule,
 		FormsModule,
-		ControlTabRouting
+		ControlTabRouting,
+		SharedModule,
+		ReactiveFormsModule
 	],
 	declarations: [ControlTabPage]
 })

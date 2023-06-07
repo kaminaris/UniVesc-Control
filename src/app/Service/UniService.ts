@@ -15,6 +15,7 @@ import { PlayRequest }                                        from 'src/app/Pack
 import { ReadEepromRequest }                                  from 'src/app/Packets/ReadEepromRequest';
 import { ReadEepromResponse }                                 from 'src/app/Packets/ReadEepromResponse';
 import { SetVolumeRequest }                                   from 'src/app/Packets/SetVolumeRequest';
+import { VescSettings }                                       from 'src/app/Packets/VescSettings';
 import { BluetoothTransport, Delay }                          from 'src/app/Service/BluetoothTransport';
 import { crc32 }                                              from 'src/app/Util/crc32';
 
@@ -161,6 +162,21 @@ export class UniService {
 
 	async beepTest() {
 		await this.bt.write([PacketType.BEEP_TEST]);
+	}
+
+	async getSettings() {
+		const r = await this.bt.exchange([PacketType.GET_SETTINGS], 1000);
+		const settings = BinarySerializer.deserialize(VescSettings, r);
+
+		return settings;
+	}
+	async saveSettings(settings: VescSettings) {
+		const s = BinarySerializer.serialize(settings)!;
+		s.unshift(PacketType.SAVE_SETTINGS);
+
+		const r = await this.bt.exchange(s, 1000);
+
+		return r[0] == ResponseCode.OK;
 	}
 
 	async play(file: string) {

@@ -24,6 +24,8 @@ export enum PacketType {
 	BEEP_TEST,
 	SET_VOLUME,
 	PLAY,
+	GET_SETTINGS,
+	SAVE_SETTINGS
 }
 
 @BinarySerializable({ layout: 'sequential' })

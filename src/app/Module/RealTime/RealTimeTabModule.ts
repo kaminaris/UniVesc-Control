@@ -2,6 +2,7 @@ import { IonicModule }        from '@ionic/angular';
 import { NgModule }           from '@angular/core';
 import { CommonModule }       from '@angular/common';
 import { FormsModule }        from '@angular/forms';
+import { SharedModule }       from 'src/app/Module/Shared/SharedModule';
 import { RealTimeTabPage }    from './RealTimeTabPage';
 import { RealTimeTabRouting } from './RealTimeTabRouting';
 
@@ -10,7 +11,8 @@ import { RealTimeTabRouting } from './RealTimeTabRouting';
 		IonicModule,
 		CommonModule,
 		FormsModule,
-		RealTimeTabRouting
+		RealTimeTabRouting,
+		SharedModule
 	],
 	declarations: [RealTimeTabPage]
 })

@@ -31,7 +31,6 @@ export class BinarySerializer {
 	 * @param prop property name
 	 * @param value property value
 	 */
-	static setProperty(entity: unknown, prop: string, value: unknown): void;
 	static setProperty(entity: any, prop: string, value: any) {
 		const setter = 'set' + upperCaseFirst(prop);
 		if (entity[setter]) {
@@ -51,7 +50,6 @@ export class BinarySerializer {
 	 * @param entity class object
 	 * @param prop property name
 	 */
-	static getProperty(entity: unknown, prop: string): void;
 	static getProperty(entity: any, prop: string) {
 		const getter = 'get' + upperCaseFirst(prop);
 		if (entity[getter]) {

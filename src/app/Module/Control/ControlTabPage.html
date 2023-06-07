@@ -3,6 +3,9 @@
 		<ion-title>
 			Control
 		</ion-title>
+		<ion-item slot="end">
+			<connection-status></connection-status>
+		</ion-item>
 	</ion-toolbar>
 </ion-header>
 
@@ -13,4 +16,18 @@
 		</ion-toolbar>
 	</ion-header>
 
+	<ion-button (click)="getSettings()">
+		<ion-icon name="refresh"></ion-icon>
+	</ion-button>
+	<ion-button (click)="saveSettings()">
+		<ion-icon name="save"></ion-icon>
+	</ion-button>
+
+	<form [formGroup]="form">
+		<ion-list>
+			<ion-item *ngFor="let k of settingsKeys">
+				<ion-input type="number" label="{{ keyToLabel(k) }}" [formControlName]="k"></ion-input>
+			</ion-item>
+		</ion-list>
+	</form>
 </ion-content>
