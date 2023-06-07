@@ -1,7 +1,7 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
+import { BluetoothTransport }               from 'src/app/Service/BluetoothTransport';
 import { DownloadHelper }                   from 'src/app/Service/DownloadHelper';
 import { UniService }                       from 'src/app/Service/UniService';
-import { BluetoothTransport }               from '../Service/BluetoothTransport';
 
 @Component({
 	selector: 'real-time-tab',
@@ -21,7 +21,7 @@ export class RealTimeTabPage {
 		protected bt: BluetoothTransport,
 		protected uv: UniService
 	) {
-		bt.emLog.subscribe((v) => {
+		bt.emLog.subscribe((v: any) => {
 			const str = this.decoder.decode(new Uint8Array(v));
 			console.log(v, str);
 			this.logText += str;

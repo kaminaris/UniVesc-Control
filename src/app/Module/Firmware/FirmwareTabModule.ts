@@ -2,17 +2,17 @@ import { IonicModule }        from '@ionic/angular';
 import { NgModule }           from '@angular/core';
 import { CommonModule }       from '@angular/common';
 import { FormsModule }        from '@angular/forms';
-import { SettingsTabPage }    from './SettingsTabPage';
-import { SettingsTabRouting } from './SettingsTabRouting';
+import { FirmwareTabPage }    from 'src/app/Module/Firmware/FirmwareTabPage';
+import { FirmwareTabRouting } from 'src/app/Module/Firmware/FirmwareTabRouting';
 
 @NgModule({
 	imports: [
 		IonicModule,
 		CommonModule,
 		FormsModule,
-		SettingsTabRouting
+		FirmwareTabRouting
 	],
-	declarations: [SettingsTabPage]
+	declarations: [FirmwareTabPage]
 })
-export class SettingsTabModule {
+export class FirmwareTabModule {
 }

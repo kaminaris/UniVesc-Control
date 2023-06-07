@@ -9,15 +9,27 @@ const routes: Routes = [
 		children: [
 			{
 				path: 'real-time',
-				loadChildren: () => import('../RealTimeTab/RealTimeTabModule').then(m => m.RealTimeTabModule)
+				loadChildren: () => import('../Module/RealTime/RealTimeTabModule').then(m => m.RealTimeTabModule)
 			},
 			{
 				path: 'control',
-				loadChildren: () => import('../ControlTab/ControlTabModule').then(m => m.ControlTabModule)
+				loadChildren: () => import('../Module/Control/ControlTabModule').then(m => m.ControlTabModule)
 			},
 			{
-				path: 'settings',
-				loadChildren: () => import('../SettingsTab/SettingsTabModule').then(m => m.SettingsTabModule)
+				path: 'debug',
+				loadChildren: () => import('../Module/Debug/DebugTabModule').then(m => m.DebugTabModule)
+			},
+			{
+				path: 'gps',
+				loadChildren: () => import('../Module/Gps/GpsTabModule').then(m => m.GpsTabModule)
+			},
+			{
+				path: 'firmware',
+				loadChildren: () => import('../Module/Firmware/FirmwareTabModule').then(m => m.FirmwareTabModule)
+			},
+			{
+				path: 'file',
+				loadChildren: () => import('../Module/File/FileTabModule').then(m => m.FileTabModule)
 			},
 			{
 				path: '',
