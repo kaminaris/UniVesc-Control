@@ -15,5 +15,15 @@
 			<ion-title size="large">Firmware</ion-title>
 		</ion-toolbar>
 	</ion-header>
-
+	<ion-item>
+		Upload new firmware
+	</ion-item>
+	<ion-item>
+		<input
+			type="file"
+			id="file-upload2"
+			(change)="uploadFirmware($event)"
+		/>
+	</ion-item>
+	<ion-progress-bar [value]="progress"></ion-progress-bar>
 </ion-content>

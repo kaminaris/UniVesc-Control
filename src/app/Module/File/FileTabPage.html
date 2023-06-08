@@ -1,7 +1,7 @@
 <ion-header [translucent]="true">
 	<ion-toolbar>
 		<ion-title>
-			File
+			Files Total: {{ info.totalBytes | fileSize }} Used: {{ info.usedBytes | fileSize }}
 		</ion-title>
 		<ion-item slot="end">
 			<connection-status></connection-status>
@@ -12,8 +12,39 @@
 <ion-content [fullscreen]="true">
 	<ion-header collapse="condense">
 		<ion-toolbar>
-			<ion-title size="large">File</ion-title>
+			<ion-title size="large">Files Total: {{ info.totalBytes | fileSize }} Used: {{ info.usedBytes | fileSize }}</ion-title>
 		</ion-toolbar>
 	</ion-header>
+	<ion-button (click)="getFiles()">
+		<ion-icon name="refresh"></ion-icon>
+	</ion-button>
+	<ion-list>
+		<ion-item lines="none" *ngFor="let item of items">
+			<ion-button slot="start" (click)="play(item)">
+				<ion-icon name="play"></ion-icon>
+			</ion-button>
+			<ion-button slot="start" (click)="download(item)">
+				<ion-icon name="download"></ion-icon>
+			</ion-button>
 
+			<ion-label>{{ item.fileName }} ({{ item.size | fileSize }})</ion-label>
+
+			<ion-button color="danger" slot="end">
+				<ion-icon name="trash"></ion-icon>
+			</ion-button>
+		</ion-item>
+	</ion-list>
+	<ion-item>
+		Upload file
+	</ion-item>
+	<ion-item>
+		<ion-input label="File name" [(ngModel)]="fileNameToUpload"></ion-input>
+	</ion-item>
+	<ion-item>
+		<input
+			type="file"
+			id="file-upload2"
+			(change)="uploadFile($event)"
+		/>
+	</ion-item>
 </ion-content>

@@ -6,6 +6,7 @@ import { ClockResponse }                                      from 'src/app/Pack
 import { FileContentResponse }                                from 'src/app/Packets/FileContentResponse';
 import { FileItemResponse }                                   from 'src/app/Packets/FileItemResponse';
 import { FileReadRequest }                                    from 'src/app/Packets/FileReadRequest';
+import { FilesystemInfoResponse }                             from 'src/app/Packets/FilesystemInfoResponse';
 import { FileWriteRequest }                                   from 'src/app/Packets/FileWriteRequest';
 import { FirmwareUpdate, FirmwareUpdateChunkSize }            from 'src/app/Packets/FirmwareUpdate';
 import { GetChipInfo }                                        from 'src/app/Packets/GetChipInfo';
@@ -13,8 +14,9 @@ import { GetClock }                                           from 'src/app/Pack
 import { Ping }                                               from 'src/app/Packets/Ping';
 import { PlayRequest }                                        from 'src/app/Packets/PlayRequest';
 import { ReadEepromRequest }                                  from 'src/app/Packets/ReadEepromRequest';
-import { ReadEepromResponse }                                 from 'src/app/Packets/ReadEepromResponse';
-import { SetVolumeRequest }                                   from 'src/app/Packets/SetVolumeRequest';
+import { ReadEepromResponse } from 'src/app/Packets/ReadEepromResponse';
+import { RealTimeData }       from 'src/app/Packets/RealTimeData';
+import { SetVolumeRequest }   from 'src/app/Packets/SetVolumeRequest';
 import { VescSettings }                                       from 'src/app/Packets/VescSettings';
 import { BluetoothTransport, Delay }                          from 'src/app/Service/BluetoothTransport';
 import { crc32 }                                              from 'src/app/Util/crc32';
@@ -86,34 +88,67 @@ export class UniService {
 		}
 	}
 
-	readSpiffsCb(value: number[]) {
-		const packetType = value.shift();
-
-		switch (packetType) {
-			case ResponseCode.FILE:
-				const f = BinarySerializer.deserialize(FileItemResponse, value);
-				console.log(f, value);
-
-				break;
-
-			case ResponseCode.OK:
-				this.dataSub?.unsubscribe();
-				console.log('Reading finished');
-				break;
-			default:
-				console.log('Unknown Response!');
-				break;
-		}
+	async getFileSystemInfo() {
+		const r = await this.bt.exchange([PacketType.GET_FILESYSTEM_INFO], 1000);
+		return BinarySerializer.deserialize(FilesystemInfoResponse, r);
 	}
 
-	async readSpiffsFiles() {
-		const req = new BasePacket();
-		req.t = PacketType.GET_FILE_LIST;
+	readSpiffsFiles(timeout = 1000): Promise<FileItemResponse[] | null> {
+		return new Promise(async (resolve, reject) => {
+			const req = new BasePacket();
+			req.t = PacketType.GET_FILE_LIST;
 
-		this.dataSub = this.bt.emData.subscribe(this.readSpiffsCb.bind(this));
+			const result: FileItemResponse[] = [];
+			let sub: Subscription;
+			let timer: number;
 
-		const b = BinarySerializer.serialize(req) as number[];
-		const res = await this.bt.write(b);
+			let startTimeout = () => {
+				if (timer) {
+					window.clearTimeout(timer);
+				}
+				timer = window.setTimeout(async () => {
+					sub?.unsubscribe();
+					reject(new Error('Unable to get files'));
+				}, timeout);
+			};
+			startTimeout();
+
+			const resolver = async (a: any[]) => {
+				window.clearTimeout(timer);
+				resolve(a);
+				sub?.unsubscribe();
+			};
+
+			let readSpiffsCb = (value: number[]) => {
+				const packetType = value.shift();
+
+				switch (packetType) {
+					case ResponseCode.FILE:
+						const f = BinarySerializer.deserialize(FileItemResponse, value);
+						result.push(f);
+						startTimeout();
+
+						break;
+
+					case ResponseCode.OK:
+						resolver(result);
+						sub?.unsubscribe();
+						console.log('Reading finished');
+						break;
+					default:
+						reject();
+						sub?.unsubscribe();
+						console.log('Unknown Response!');
+						break;
+				}
+			};
+
+			sub = this.bt.emData.subscribe(readSpiffsCb.bind(this));
+
+			const b = BinarySerializer.serialize(req) as number[];
+			const res = await this.bt.write(b);
+		});
+
 	}
 
 	fileCache: { name: string, content: number[] } = { name: '', content: [] };
@@ -170,6 +205,7 @@ export class UniService {
 
 		return settings;
 	}
+
 	async saveSettings(settings: VescSettings) {
 		const s = BinarySerializer.serialize(settings)!;
 		s.unshift(PacketType.SAVE_SETTINGS);
@@ -180,8 +216,9 @@ export class UniService {
 	}
 
 	async play(file: string) {
+		const fName = file.startsWith('/') ? file : '/' + file;
 		const req = new PlayRequest();
-		req.fileName = file;
+		req.fileName = fName;
 
 		const b = BinarySerializer.serialize(req) as number[];
 		const r = await this.bt.exchange(b, 1000);
@@ -201,54 +238,62 @@ export class UniService {
 		return r[0] == ResponseCode.OK;
 	}
 
-	firmwareUpdateCb(value: number[]) {
-		const packetType = value[0];
-
-		switch (packetType) {
-			case 10:
-				console.log('Progress: ${value[1]}%');
-				break;
-			case 7: {
-				console.log('Progress: 100%');
-				console.log('Flashing finished, restarting');
-				this.restart().catch(console.error);
-				this.dataSub?.unsubscribe();
-				break;
-			}
-			case 8:
-				console.log('Flashing FAILED!');
-				break;
-			default:
-				console.log('Unknown Response!');
-				break;
-		}
+	async getRealTimeData() {
+		const r = await this.bt.exchange([PacketType.GET_REALTIME_DATA], 1000);
+		return BinarySerializer.deserialize(RealTimeData, r);
 	}
 
-	async writeFirmware(f: File) {
-		const data = await this.convertFileToByteArray(f);
-		const chunked = this.chunkArray(data, FirmwareUpdateChunkSize);
+	async writeFirmware(f: File, progressCb: (pct: number) => void): Promise<void> {
+		return new Promise(async (resolve, reject) => {
+			const data = await this.convertFileToByteArray(f);
+			const chunked = this.chunkArray(data, FirmwareUpdateChunkSize);
 
-		this.dataSub = this.bt.emData.subscribe(this.firmwareUpdateCb.bind(this));
+			let firmwareUpdateCb = (value: number[]) => {
+				const packetType = value[0];
 
-		for (let i = 0; i < chunked.length; i++) {
-			const fw = new FirmwareUpdate();
-			fw.chunks = chunked.length;
-			fw.chunk = i + 1;
-			fw.d = chunked[i];
-			fw.size = fw.d.length;
-			fw.checksum = crc32(fw.d);
-			if (fw.d.length < FirmwareUpdateChunkSize) {
-				fw.d = this.padArrayWithZeros(fw.d, FirmwareUpdateChunkSize);
+				switch (packetType) {
+					case 10:
+						console.log(`Progress: ${value[1]}%`);
+						progressCb(value[1]);
+						break;
+					case 7: {
+						console.log('Progress: 100%');
+						console.log('Flashing finished, restarting');
+						this.restart().catch(console.error);
+						this.dataSub?.unsubscribe();
+
+						progressCb(100);
+						resolve();
+						break;
+					}
+					case 8:
+						reject(new Error('Flashing FAILED!'));
+						console.log('Flashing FAILED!');
+						break;
+					default:
+						console.log('Unknown Response!');
+						break;
+				}
 			}
-			fw.totalSize = data.length;
 
-			console.log(fw.d.length);
-			const b = BinarySerializer.serialize(fw) as number[];
-			console.log(fw, b.length, fw.d[0], this.convertToHexString(b));
+			this.dataSub = this.bt.emData.subscribe(firmwareUpdateCb.bind(this));
 
-			const res = await this.bt.write(b);
-			console.log(res);
-		}
+			for (let i = 0; i < chunked.length; i++) {
+				const fw = new FirmwareUpdate();
+				fw.chunks = chunked.length;
+				fw.chunk = i + 1;
+				fw.d = chunked[i];
+				fw.size = fw.d.length;
+				fw.checksum = crc32(fw.d);
+				if (fw.d.length < FirmwareUpdateChunkSize) {
+					fw.d = this.padArrayWithZeros(fw.d, FirmwareUpdateChunkSize);
+				}
+				fw.totalSize = data.length;
+
+				const b = BinarySerializer.serialize(fw) as number[];
+				const res = await this.bt.write(b);
+			}
+		});
 	}
 
 	/**

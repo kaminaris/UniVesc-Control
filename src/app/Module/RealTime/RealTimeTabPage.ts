@@ -1,116 +1,54 @@
-import { Component, ElementRef, ViewChild } from '@angular/core';
-import { BluetoothTransport }               from 'src/app/Service/BluetoothTransport';
-import { DownloadHelper }                   from 'src/app/Service/DownloadHelper';
-import { UniService }                       from 'src/app/Service/UniService';
+import { Component, OnDestroy, OnInit }          from '@angular/core';
+import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
+import { RealTimeData }                          from 'src/app/Packets/RealTimeData';
+import { BluetoothTransport }           from 'src/app/Service/BluetoothTransport';
+import { UniService }                   from 'src/app/Service/UniService';
 
 @Component({
 	selector: 'real-time-tab',
 	templateUrl: 'RealTimeTabPage.html'
 })
-export class RealTimeTabPage {
-	encoder = new TextEncoder();
-	decoder = new TextDecoder();
+export class RealTimeTabPage implements OnInit {
+	data = new RealTimeData();
 
-	logText = '';
-	volume = 5;
-
-	firmware?: File;
-	@ViewChild('scroller') protected scrollContainer?: ElementRef;
+	interval: any;
 
 	constructor(
 		protected bt: BluetoothTransport,
-		protected uv: UniService
+		protected uni: UniService,
+		protected router: Router
 	) {
-		bt.emLog.subscribe((v: any) => {
-			const str = this.decoder.decode(new Uint8Array(v));
-			console.log(v, str);
-			this.logText += str;
-			setTimeout(() => {
-				this.scrollToBottom();
-			}, 50);
-		});
-	}
-
-	scrollToBottom(): void {
-		try {
-			if (this.scrollContainer) {
-				const native = this.scrollContainer.nativeElement;
-				if (native.scrollTop === (native.scrollHeight - native.offsetHeight)) {
-					native.scrollTop = native.scrollHeight;
+		this.router.events.subscribe((e) => {
+			if (e instanceof NavigationEnd) {
+				if (e.url !== '/tabs/real-time') {
+					this.stopInterval();
+				} else {
+					this.startInterval();
 				}
 			}
-		}
-		catch (err) {
-		}
+		});
+		this.startInterval();
 	}
 
-	async searchBt() {
-		await this.bt.connect();
+	ngOnInit() {
+		this.startInterval();
 	}
 
-	async writeBt() {
-		await this.uv.ping();
-	}
-
-	async getClock() {
-		const clock = await this.uv.getClock();
-		console.log(clock.toString());
-	}
-
-	async getEeprom() {
-		const eeprom = this.uv.getEeprom(0);
-		console.log(eeprom.toString());
-	}
-
-	async getChipInfo() {
-		const r = await this.uv.getChipInfo();
-		console.log(r);
-	}
-
-	async setFile(event: Event) {
-		const element = event.currentTarget as HTMLInputElement;
-		let fileList: FileList | null = element.files;
-		if (fileList && fileList.length > 0) {
-			this.firmware = fileList.item(0)!;
-			await this.uv.writeFirmware(this.firmware);
-
-			// console.log(chunked);
+	stopInterval() {
+		if (this.interval) {
+			window.clearInterval(this.interval);
+			this.interval = undefined;
 		}
 	}
 
-	async setFile2(event: Event) {
-		const element = event.currentTarget as HTMLInputElement;
-		let fileList: FileList | null = element.files;
-		if (fileList && fileList.length > 0) {
-			await this.uv.writeFileToSpiffs('/never.ogg', fileList.item(0)!);
-
-			// console.log(chunked);
+	startInterval() {
+		if (!this.interval) {
+			this.interval = window.setInterval(async () => {
+				if (!this.bt.connected) {
+					return;
+				}
+				this.data = await this.uni.getRealTimeData();
+			}, 1000);
 		}
-	}
-
-	async readFiles() {
-		await this.uv.readSpiffsFiles();
-	}
-
-	async beepTest() {
-		await this.uv.beepTest();
-	}
-
-	async playTest() {
-		await this.uv.play('/never.ogg');
-	}
-
-	async setVolume() {
-		await this.uv.setVolume(this.volume);
-	}
-
-	async readFile() {
-		const f = await this.uv.readFile('/beep.mp3');
-		console.log('END FILE', f);
-		if (f) {
-			const b = new Blob([new Uint8Array(f.content!)]);
-			DownloadHelper.saveBlobAs(b, 'beep.mp3');
-		}
-
 	}
 }

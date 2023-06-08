@@ -25,7 +25,9 @@ export enum PacketType {
 	SET_VOLUME,
 	PLAY,
 	GET_SETTINGS,
-	SAVE_SETTINGS
+	SAVE_SETTINGS,
+	GET_FILESYSTEM_INFO,
+	GET_REALTIME_DATA
 }
 
 @BinarySerializable({ layout: 'sequential' })

@@ -3,6 +3,7 @@ import { NgModule }                  from '@angular/core';
 import { CommonModule }              from '@angular/common';
 import { FormsModule }               from '@angular/forms';
 import { ConnectionStatusComponent } from 'src/app/Module/Shared/Component/ConnectionStatusComponent';
+import { FileSizePipe }              from 'src/app/Module/Shared/Pipe/FileSizePipe';
 
 @NgModule({
 	imports: [
@@ -10,8 +11,8 @@ import { ConnectionStatusComponent } from 'src/app/Module/Shared/Component/Conne
 		CommonModule,
 		FormsModule
 	],
-	declarations: [ConnectionStatusComponent],
-	exports: [ConnectionStatusComponent]
+	declarations: [ConnectionStatusComponent, FileSizePipe],
+	exports: [ConnectionStatusComponent, FileSizePipe]
 })
 export class SharedModule {
 }
