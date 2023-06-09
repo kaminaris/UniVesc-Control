@@ -11,6 +11,6 @@ export class FileContentResponse {
 	@BinaryField({ type: 'number', size: 4 })
 	totalSize: number = 0;
 
-	@BinaryField({ type: 'number', size: 1, arraySize: 256, array: true })
+	@BinaryField({ type: 'number', size: 1, arraySize: 370, array: true })
 	d: number[] = [];
 }

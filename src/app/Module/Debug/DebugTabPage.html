@@ -24,13 +24,6 @@
 	<ion-button (click)="beepTest()">beepTest</ion-button>
 	<ion-button (click)="readFile()">readFile</ion-button>
 
-	Spiff write
-	<input
-		type="file"
-		id="file-upload2"
-		(change)="setFile2($event)"
-	/>
-
 	<div>
 		<ion-range aria-label="Range with ticks" [ticks]="true" [snaps]="true" [min]="0" [max]="21"
 			[(ngModel)]="volume"

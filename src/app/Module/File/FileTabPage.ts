@@ -1,8 +1,9 @@
-import { Component, OnInit }      from '@angular/core';
-import { FileItemResponse }       from 'src/app/Packets/FileItemResponse';
-import { FilesystemInfoResponse } from 'src/app/Packets/FilesystemInfoResponse';
-import { DownloadHelper }         from 'src/app/Service/DownloadHelper';
-import { UniService }             from 'src/app/Service/UniService';
+import { Component, OnInit }                from '@angular/core';
+import { AlertController, ToastController } from '@ionic/angular';
+import { FileItemResponse }                 from 'src/app/Packets/FileItemResponse';
+import { FilesystemInfoResponse }           from 'src/app/Packets/FilesystemInfoResponse';
+import { DownloadHelper }                   from 'src/app/Service/DownloadHelper';
+import { UniService }                       from 'src/app/Service/UniService';
 
 @Component({
 	selector: 'file-tab-page',
@@ -12,8 +13,13 @@ export class FileTabPage implements OnInit {
 	items: FileItemResponse[] = [];
 	info = new FilesystemInfoResponse();
 	fileNameToUpload = '';
+	progress = 0;
 
-	constructor(protected uni: UniService) {
+	constructor(
+		protected uni: UniService,
+		protected toastController: ToastController,
+		protected alertController: AlertController
+	) {
 	}
 
 	async ngOnInit() {
@@ -56,9 +62,54 @@ export class FileTabPage implements OnInit {
 		const element = event.currentTarget as HTMLInputElement;
 		let fileList: FileList | null = element.files;
 		if (fileList && fileList.length > 0) {
-			await this.uni.writeFileToSpiffs('/' + this.fileNameToUpload, fileList.item(0)!);
+			const success = await this.uni.writeFileToSpiffs(
+				'/' + this.fileNameToUpload,
+				fileList.item(0)!,
+				(pct) => {this.progress = pct;}
+			);
+			this.progress = 100;
 
-			// console.log(chunked);
+			const toast = await this.toastController.create({
+				message: success ? 'Uploaded!' : 'Failed to upload!',
+				duration: 1500,
+				position: 'bottom'
+			});
+			await toast.present();
+			this.progress = 0;
+		}
+	}
+
+	async delete(item: FileItemResponse) {
+		const alert = await this.alertController.create({
+			header: 'Confirm Alert',
+			message: 'Are you sure?',
+			buttons: [
+				{
+					text: 'Yes',
+					handler: () => {
+						this.confirmDelete(item);
+					}
+				},
+				{
+					text: 'No',
+					handler: () => {}
+				}
+			]
+		});
+
+		await alert.present();
+	}
+
+	async confirmDelete(item: FileItemResponse) {
+		const success = await this.uni.deleteFile(item.fileName);
+		const toast = await this.toastController.create({
+			message: success ? 'Deleted!' : 'Failed to delete!',
+			duration: 1500,
+			position: 'bottom'
+		});
+		await toast.present();
+		if (success) {
+			await this.getFiles();
 		}
 	}
 }

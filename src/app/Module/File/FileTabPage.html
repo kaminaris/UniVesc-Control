@@ -15,9 +15,14 @@
 			<ion-title size="large">Files Total: {{ info.totalBytes | fileSize }} Used: {{ info.usedBytes | fileSize }}</ion-title>
 		</ion-toolbar>
 	</ion-header>
-	<ion-button (click)="getFiles()">
-		<ion-icon name="refresh"></ion-icon>
-	</ion-button>
+
+	<ion-fab slot="fixed" vertical="bottom" horizontal="end">
+		<ion-fab-button (click)="getFiles()">
+			<ion-icon name="refresh"></ion-icon>
+		</ion-fab-button>
+	</ion-fab>
+
+	<ion-progress-bar [value]="progress"></ion-progress-bar>
 	<ion-list>
 		<ion-item lines="none" *ngFor="let item of items">
 			<ion-button slot="start" (click)="play(item)">
@@ -29,7 +34,7 @@
 
 			<ion-label>{{ item.fileName }} ({{ item.size | fileSize }})</ion-label>
 
-			<ion-button color="danger" slot="end">
+			<ion-button color="danger" slot="end" (click)="delete(item)">
 				<ion-icon name="trash"></ion-icon>
 			</ion-button>
 		</ion-item>

@@ -15,6 +15,7 @@
 			<ion-title size="large">Firmware</ion-title>
 		</ion-toolbar>
 	</ion-header>
+	<ion-progress-bar [value]="progress"></ion-progress-bar>
 	<ion-item>
 		Upload new firmware
 	</ion-item>
@@ -25,5 +26,4 @@
 			(change)="uploadFirmware($event)"
 		/>
 	</ion-item>
-	<ion-progress-bar [value]="progress"></ion-progress-bar>
 </ion-content>

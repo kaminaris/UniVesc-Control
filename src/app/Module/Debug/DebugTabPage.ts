@@ -66,16 +66,6 @@ export class DebugTabPage {
 		console.log(r);
 	}
 
-	async setFile2(event: Event) {
-		const element = event.currentTarget as HTMLInputElement;
-		let fileList: FileList | null = element.files;
-		if (fileList && fileList.length > 0) {
-			await this.uni.writeFileToSpiffs('/never.ogg', fileList.item(0)!);
-
-			// console.log(chunked);
-		}
-	}
-
 	async readFiles() {
 		await this.uni.readSpiffsFiles();
 	}

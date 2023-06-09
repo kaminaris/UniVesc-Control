@@ -212,9 +212,7 @@ export class BluetoothTransport {
 					console.log('DIS');
 					console.log('DIS');
 					await navigator.bluetooth.requestDevice(
-						{
-							filters: [{ 'name': 'UART Service' }]
-						}
+						{ filters: [{ services: [BluetoothTransport.SRD_SERVICE] }] }
 					).then((devices) => {
 						(window as any).onBluetoothConnected(devices);
 					});
@@ -229,7 +227,7 @@ export class BluetoothTransport {
 			try {
 				console.log('doxxx');
 				this.device = await navigator.bluetooth.requestDevice(
-					{ filters: [{ 'name': 'UART Service' }], optionalServices: [BluetoothTransport.SRD_SERVICE] }
+					{ filters: [{ services: [BluetoothTransport.SRD_SERVICE] }] }
 				);
 
 				return [this.device];

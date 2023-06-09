@@ -4,6 +4,7 @@ import { BinarySerializer }                                   from 'src/app/Bina
 import { BasePacket, BaseResponse, PacketType, ResponseCode } from 'src/app/Packets/BasePacket';
 import { ClockResponse }                                      from 'src/app/Packets/ClockResponse';
 import { FileContentResponse }                                from 'src/app/Packets/FileContentResponse';
+import { FileDeleteRequest }                                  from 'src/app/Packets/FileDeleteRequest';
 import { FileItemResponse }                                   from 'src/app/Packets/FileItemResponse';
 import { FileReadRequest }                                    from 'src/app/Packets/FileReadRequest';
 import { FilesystemInfoResponse }                             from 'src/app/Packets/FilesystemInfoResponse';
@@ -14,9 +15,9 @@ import { GetClock }                                           from 'src/app/Pack
 import { Ping }                                               from 'src/app/Packets/Ping';
 import { PlayRequest }                                        from 'src/app/Packets/PlayRequest';
 import { ReadEepromRequest }                                  from 'src/app/Packets/ReadEepromRequest';
-import { ReadEepromResponse } from 'src/app/Packets/ReadEepromResponse';
-import { RealTimeData }       from 'src/app/Packets/RealTimeData';
-import { SetVolumeRequest }   from 'src/app/Packets/SetVolumeRequest';
+import { ReadEepromResponse }                                 from 'src/app/Packets/ReadEepromResponse';
+import { RealTimeData }                                       from 'src/app/Packets/RealTimeData';
+import { SetVolumeRequest }                                   from 'src/app/Packets/SetVolumeRequest';
 import { VescSettings }                                       from 'src/app/Packets/VescSettings';
 import { BluetoothTransport, Delay }                          from 'src/app/Service/BluetoothTransport';
 import { crc32 }                                              from 'src/app/Util/crc32';
@@ -62,10 +63,10 @@ export class UniService {
 		return BinarySerializer.deserialize(BaseResponse, res);
 	}
 
-	async writeFileToSpiffs(fileName: string, f: File) {
+	async writeFileToSpiffs(fileName: string, f: File, progressCb: (pct: number) => void) {
 		const file = await this.convertFileToByteArray(f);
-		const chunked = this.chunkArray(file, 256);
-
+		const chunked = this.chunkArray(file, 370);
+		let success = true;
 		let position = 0;
 		for (let i = 0; i < chunked.length; i++) {
 			const fw = new FileWriteRequest();
@@ -74,18 +75,22 @@ export class UniService {
 			fw.size = fw.d.length;
 			fw.position = position;
 			fw.checksum = crc32(fw.d);
-			if (fw.d.length < 256) {
-				fw.d = this.padArrayWithZeros(fw.d, 256);
+			if (fw.d.length < 370) {
+				fw.d = this.padArrayWithZeros(fw.d, 370);
 			}
 
 			const b = BinarySerializer.serialize(fw) as number[];
-			console.log(fw, this.convertToHexString(b));
-
 			const res = await this.bt.exchange(b, 2000);
-			await Delay(5);
-			console.log(res);
+			if (res[0] !== ResponseCode.OK) {
+				console.log('RESPONSE CODE ' + res[0]);
+				success = false;
+			}
+			await Delay(2);
 			position += fw.size;
+			progressCb(i / chunked.length);
 		}
+
+		return success;
 	}
 
 	async getFileSystemInfo() {
@@ -191,6 +196,17 @@ export class UniService {
 		return this.fileCache;
 	}
 
+	async deleteFile(file: string) {
+		const fName = file.startsWith('/') ? file : '/' + file;
+		const req = new FileDeleteRequest();
+		req.fileName = fName;
+
+		const b = BinarySerializer.serialize(req) as number[];
+		const r = await this.bt.exchange(b, 1000);
+
+		return r[0] == ResponseCode.OK;
+	}
+
 	async restart() {
 		await this.bt.write([PacketType.RESTART]);
 	}
@@ -222,7 +238,8 @@ export class UniService {
 
 		const b = BinarySerializer.serialize(req) as number[];
 		const r = await this.bt.exchange(b, 1000);
-		console.log(r);
+
+		return r[0] == ResponseCode.OK;
 	}
 
 	async setVolume(volume: number) {
@@ -235,6 +252,7 @@ export class UniService {
 
 		const b = BinarySerializer.serialize(req) as number[];
 		const r = await this.bt.exchange(b, 1000);
+
 		return r[0] == ResponseCode.OK;
 	}
 
@@ -253,7 +271,7 @@ export class UniService {
 
 				switch (packetType) {
 					case 10:
-						console.log(`Progress: ${value[1]}%`);
+						console.log(`Progress: ${ value[1] }%`);
 						progressCb(value[1]);
 						break;
 					case 7: {
@@ -274,7 +292,7 @@ export class UniService {
 						console.log('Unknown Response!');
 						break;
 				}
-			}
+			};
 
 			this.dataSub = this.bt.emData.subscribe(firmwareUpdateCb.bind(this));
 

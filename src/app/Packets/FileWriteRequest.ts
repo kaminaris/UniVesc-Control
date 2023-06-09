@@ -17,6 +17,6 @@ export class FileWriteRequest extends BasePacket {
 	@BinaryField({ type: 'number', size: 4 })
 	checksum: number = 0;
 
-	@BinaryField({ type: 'number', array: true, arraySize: 256 })
+	@BinaryField({ type: 'number', array: true, arraySize: 370 })
 	d: number[] = [];
 }
