@@ -1,17 +1,19 @@
-import { Component, OnDestroy, OnInit }          from '@angular/core';
-import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
-import { RealTimeData }                          from 'src/app/Packets/RealTimeData';
-import { BluetoothTransport }           from 'src/app/Service/BluetoothTransport';
-import { UniService }                   from 'src/app/Service/UniService';
+import { AfterViewInit, Component, OnInit } from '@angular/core';
+import { NavigationEnd, Router }            from '@angular/router';
+import { Gauge }                            from 'src/app/Module/RealTime/Gauge';
+import { RealTimeData }                     from 'src/app/Packets/RealTimeData';
+import { BluetoothTransport }               from 'src/app/Service/BluetoothTransport';
+import { UniService }                       from 'src/app/Service/UniService';
 
 @Component({
 	selector: 'real-time-tab',
 	templateUrl: 'RealTimeTabPage.html'
 })
-export class RealTimeTabPage implements OnInit {
+export class RealTimeTabPage implements OnInit, AfterViewInit {
 	data = new RealTimeData();
 
 	interval: any;
+	gauge3?: Gauge;
 
 	constructor(
 		protected bt: BluetoothTransport,
@@ -22,7 +24,8 @@ export class RealTimeTabPage implements OnInit {
 			if (e instanceof NavigationEnd) {
 				if (e.url !== '/tabs/real-time') {
 					this.stopInterval();
-				} else {
+				}
+				else {
 					this.startInterval();
 				}
 			}
@@ -32,6 +35,10 @@ export class RealTimeTabPage implements OnInit {
 
 	ngOnInit() {
 		this.startInterval();
+	}
+
+	ngAfterViewInit() {
+		this.drawSpeedometer();
 	}
 
 	stopInterval() {
@@ -50,5 +57,33 @@ export class RealTimeTabPage implements OnInit {
 				this.data = await this.uni.getRealTimeData();
 			}, 1000);
 		}
+	}
+
+	drawSpeedometer() {
+
+		this.gauge3 = new Gauge(
+			document.getElementById('gauge3') as any, {
+				max: 100,
+				value: 50,
+				gaugeColor: (value) => {
+					if (value < -25) {
+						return '#5ee432';
+					}
+					else if (value < 0) {
+						return '#fffa50';
+					}
+					else if (value < 25) {
+						return '#f7aa38';
+					}
+					else {
+						return '#ef4655';
+					}
+				}
+			}
+		);
+		setInterval(() => {
+			this.gauge3?.setValue(Math.random() * 100);
+		}, 200);
+		this.gauge3?.setValue(Math.random() * 100);
 	}
 }
