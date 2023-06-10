@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">UniVescDisplayControl</string>
+    <string name="title_activity_main">UniVescDisplayControl</string>
+    <string name="package_name">uni.vesc.control</string>
+    <string name="custom_url_scheme">uni.vesc.control</string>
+</resources>
