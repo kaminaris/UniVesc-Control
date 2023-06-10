@@ -30,5 +30,17 @@ export class VescSettings {
 	maxMotorCurrent: number = 35.0;
 
 	@BinaryField({ size: 4, type: 'float' })
-	dutyWarning: number = 80.0;
+	dutyWarning = 80.0; // will play beep.mp3
+
+	@BinaryField({ size: 4, type: 'float' })
+	motorTempWarning = 80.0; // will play motortemp.mp3
+
+	@BinaryField({ size: 4, type: 'float' })
+	mosfetTempWarning = 80.0; // will play mosfettemp.mp3
+
+	@BinaryField({ size: 4, type: 'float' })
+	speedWarning = 40.0; // will play speed.mp3
+
+	@BinaryField({ size: 4, type: 'float' })
+	warningFrequency = 5.0; // each warning can only occur once per X seconds
 }

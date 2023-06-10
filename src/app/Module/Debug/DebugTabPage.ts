@@ -74,6 +74,11 @@ export class DebugTabPage {
 		await this.uni.beepTest();
 	}
 
+
+	async tuneTest() {
+		await this.uni.tuneTest();
+	}
+
 	async playTest() {
 		await this.uni.play('/never.ogg');
 	}

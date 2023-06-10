@@ -15,5 +15,10 @@
 			<ion-title size="large">Gps</ion-title>
 		</ion-toolbar>
 	</ion-header>
-
+	<ion-fab slot="fixed" vertical="bottom" horizontal="end">
+		<ion-fab-button (click)="toggleTracking()">
+			<ion-icon [name]="tracking ? 'stop-circle' : 'locate'"></ion-icon>
+		</ion-fab-button>
+	</ion-fab>
+	<bing-map #bingMap *ngIf="mapLoaded" [route]="entries"></bing-map>
 </ion-content>

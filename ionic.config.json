@@ -1,7 +1,7 @@
 {
-  "name": "UniVescDisplayControl",
-  "integrations": {
-    "capacitor": {}
-  },
-  "type": "angular"
+	"name": "UniVescDisplayControl",
+	"integrations": {
+		"capacitor": {}
+	},
+	"type": "angular"
 }

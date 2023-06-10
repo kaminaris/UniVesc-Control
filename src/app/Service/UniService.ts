@@ -215,6 +215,10 @@ export class UniService {
 		await this.bt.write([PacketType.BEEP_TEST]);
 	}
 
+	async tuneTest() {
+		await this.bt.write([PacketType.TUNE_TEST]);
+	}
+
 	async getSettings() {
 		const r = await this.bt.exchange([PacketType.GET_SETTINGS], 1000);
 		const settings = BinarySerializer.deserialize(VescSettings, r);
