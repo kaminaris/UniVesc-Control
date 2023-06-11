@@ -4,6 +4,10 @@ import { AlertController }      from '@ionic/angular';
 import { BingMapComponent }     from 'src/app/Module/Gps/BingMapComponent';
 import { BingApiLoaderService } from 'src/app/Module/Gps/Service/BingApiLoaderService';
 import { GpsService }           from 'src/app/Service/GpsService';
+export interface GpsHistoryEntry {
+	time: string;
+	entries: Position[];
+}
 
 @Component({
 	selector: 'gps-tab-page',
@@ -12,10 +16,11 @@ import { GpsService }           from 'src/app/Service/GpsService';
 export class GpsTabPage {
 	mapLoaded = false;
 	tracking = false;
-	test = true;
+	test = false;
+	history: GpsHistoryEntry[] = [];
 
 	@ViewChild('bingMap') bingMap!: BingMapComponent;
-	entries: Microsoft.Maps.Location[] = [];
+	entries: Position[] = [];
 
 	constructor(
 		protected bingApiLoader: BingApiLoaderService,
@@ -32,6 +37,15 @@ export class GpsTabPage {
 			this.bingMap.clearRoute();
 			this.bingMap.drawRoute();
 		});
+
+		const history = localStorage.getItem('gps-history');
+		if (history) {
+			this.history = JSON.parse(history);
+		}
+	}
+
+	saveHistory() {
+		localStorage.setItem('gps-history', JSON.stringify(this.history));
 	}
 
 	async toggleTracking() {
@@ -69,7 +83,10 @@ export class GpsTabPage {
 		}
 	}
 
-	saveRoute(list: Microsoft.Maps.Location[]) {
-
+	saveRoute(list: Position[]) {
+		this.history.push({
+			entries: list,
+			time: new Date().toISOString()
+		});
 	}
 }

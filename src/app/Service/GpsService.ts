@@ -5,7 +5,7 @@ import { BehaviorSubject }               from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class GpsService {
-	entries = new BehaviorSubject<Microsoft.Maps.Location[]>([]);
+	entries = new BehaviorSubject<Position[]>([]);
 
 	permissions?: PermissionStatus;
 	watchId?: string;
@@ -32,7 +32,7 @@ export class GpsService {
 			return;
 		}
 		console.log(position);
-		this.entries.value.push(this.convertToMsLocation(position));
+		this.entries.value.push(position);
 		this.entries.next(this.entries.value);
 	}
 
@@ -65,11 +65,11 @@ export class GpsService {
 		const center = await this.getCoordinates();
 
 		this.testInterval = window.setInterval(() => {
-			this.entries.value.push(new Microsoft.Maps.Location(
-				center.coords.latitude + Math.random(),
-				center.coords.longitude + Math.random()
-			));
-			this.entries.next(this.entries.value);
+			// this.entries.value.push(new GeolocationPosition(
+			// 	center.coords.latitude + Math.random(),
+			// 	center.coords.longitude + Math.random()
+			// ));
+			// this.entries.next(this.entries.value);
 			console.log('Adding random pos');
 		}, 5000);
 	}
