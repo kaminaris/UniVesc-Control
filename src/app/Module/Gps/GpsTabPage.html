@@ -16,9 +16,17 @@
 		</ion-toolbar>
 	</ion-header>
 	<ion-fab slot="fixed" vertical="bottom" horizontal="end">
-		<ion-fab-button (click)="toggleTracking()">
-			<ion-icon [name]="tracking ? 'stop-circle' : 'locate'"></ion-icon>
+		<ion-fab-button>
+			<ion-icon name="add"></ion-icon>
 		</ion-fab-button>
+		<ion-fab-list side="start">
+			<ion-fab-button (click)="toggleTracking()">
+				<ion-icon [name]="tracking ? 'stop-circle' : 'locate'"></ion-icon>
+			</ion-fab-button>
+			<ion-fab-button (click)="showHistory()">
+				<ion-icon name="list"></ion-icon>
+			</ion-fab-button>
+		</ion-fab-list>
 	</ion-fab>
-	<bing-map #bingMap *ngIf="mapLoaded" [route]="entries"></bing-map>
+	<bing-map #bingMap *ngIf="mapLoaded"></bing-map>
 </ion-content>
