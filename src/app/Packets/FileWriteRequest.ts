@@ -8,7 +8,7 @@ export class FileWriteRequest extends BasePacket {
 	@BinaryField({ type: 'string', size: 128 })
 	fileName: string = '';
 
-	@BinaryField({ type: 'number', size: 4 })
+	@BinaryField({ type: 'number', size: 4,  })
 	position: number = 0;
 
 	@BinaryField({ type: 'number', size: 2 })

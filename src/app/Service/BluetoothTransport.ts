@@ -8,10 +8,40 @@ export const Delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 @Injectable({ providedIn: 'root' })
 export class BluetoothTransport {
-	static SRD_SERVICE = '9c12d201-cbc3-413b-963b-9e49ff7e7d31';
-	static CONTROL_POINT = '9c12d202-cbc3-413b-963b-9e49ff7e7d31';
-	static WRITE_POINT = '9c12d203-cbc3-413b-963b-9e49ff7e7d31';
-	static DEBUG_POINT = '9c12d204-cbc3-413b-963b-9e49ff7e7d31';
+	uuidFirst = 0x4B2DF921;
+	uuidSecond = 0x9086;
+	uuidThird = 0x4977;
+	uuidFourth = 0xA303;
+	uuidFifth = 0x66BA8A5EB947;
+
+	formatUUID(uuidFirst: number, uuidSecond: number, uuidThird: number, uuidFourth: number, uuidFifth: number): string {
+		// Convert numbers to hexadecimal strings
+		const firstPart = uuidFirst.toString(16).toLowerCase().padStart(8, '0');
+		const secondPart = uuidSecond.toString(16).toLowerCase().padStart(4, '0');
+		const thirdPart = uuidThird.toString(16).toLowerCase().padStart(4, '0');
+		const fourthPart = uuidFourth.toString(16).toLowerCase().padStart(4, '0');
+		const fifthPart = uuidFifth.toString(16).toLowerCase().padStart(12, '0');
+
+		// Join parts with dashes
+		return `${ firstPart }-${ secondPart }-${ thirdPart }-${ fourthPart }-${ fifthPart }`;
+	}
+
+	get serviceUuid() {
+		console.log(this.formatUUID(this.uuidFirst, this.uuidSecond, this.uuidThird, this.uuidFourth, this.uuidFifth));
+		return this.formatUUID(this.uuidFirst, this.uuidSecond, this.uuidThird, this.uuidFourth, this.uuidFifth);
+	}
+
+	get txUuid() {
+		return this.formatUUID(this.uuidFirst + 1, this.uuidSecond, this.uuidThird, this.uuidFourth, this.uuidFifth);
+	}
+
+	get rxUuid() {
+		return this.formatUUID(this.uuidFirst + 2, this.uuidSecond, this.uuidThird, this.uuidFourth, this.uuidFifth);
+	}
+
+	get debugUuid() {
+		return this.formatUUID(this.uuidFirst + 3, this.uuidSecond, this.uuidThird, this.uuidFourth, this.uuidFifth);
+	}
 
 	busy = false;
 	bleDevice?: BleDevice;
@@ -77,6 +107,7 @@ export class BluetoothTransport {
 		}
 
 		const data = a.target?.value ? dataViewToNumbers(a.target.value) : dataViewToNumbers(a);
+		console.log(new TextDecoder().decode(new Uint8Array(data)));
 		this.emLog.emit(data);
 	};
 
@@ -88,18 +119,20 @@ export class BluetoothTransport {
 		this.gattServer = await this.device.gatt!.connect();
 		this.device.ongattserverdisconnected = this.onDisconnect.bind(this);
 
-		let btService = await this.gattServer.getPrimaryService(BluetoothTransport.SRD_SERVICE);
+		let btService = await this.gattServer.getPrimaryService(
+			this.serviceUuid
+		);
 
-		this.ctrlChar = await btService.getCharacteristic(BluetoothTransport.CONTROL_POINT);
+		this.ctrlChar = await btService.getCharacteristic(this.txUuid);
 		this.ctrlChar.addEventListener('characteristicvaluechanged', this.resolver.bind(this));
 
-		this.debugChar = await btService.getCharacteristic(BluetoothTransport.DEBUG_POINT);
+		this.debugChar = await btService.getCharacteristic(this.debugUuid);
 		this.debugChar.addEventListener('characteristicvaluechanged', this.debugResolver.bind(this));
 
 		await this.ctrlChar.startNotifications();
 		await this.debugChar.startNotifications();
 
-		this.writeChar = await btService.getCharacteristic(BluetoothTransport.WRITE_POINT);
+		this.writeChar = await btService.getCharacteristic(this.rxUuid);
 		console.log(this.ctrlChar, this.writeChar);
 		// await this.readPPCPValue(this.ctrlChar);
 		// await this.readPPCPValue(this.writeChar);
@@ -136,7 +169,7 @@ export class BluetoothTransport {
 
 			console.log('dos2');
 			this.bleDevice = await BleClient.requestDevice({
-				services: [BluetoothTransport.SRD_SERVICE]
+				services: [this.serviceUuid]
 			});
 
 			// connect to device, the onDisconnect callback is optional
@@ -149,8 +182,8 @@ export class BluetoothTransport {
 
 			await BleClient.startNotifications(
 				this.bleDevice!.deviceId,
-				BluetoothTransport.SRD_SERVICE,
-				BluetoothTransport.CONTROL_POINT,
+				this.serviceUuid,
+				this.txUuid,
 				this.resolver.bind(this)
 			);
 
@@ -212,7 +245,7 @@ export class BluetoothTransport {
 					console.log('DIS');
 					console.log('DIS');
 					await navigator.bluetooth.requestDevice(
-						{ filters: [{ services: [BluetoothTransport.SRD_SERVICE] }] }
+						{ filters: [{ services: [this.serviceUuid] }] }
 					).then((devices) => {
 						(window as any).onBluetoothConnected(devices);
 					});
@@ -227,7 +260,7 @@ export class BluetoothTransport {
 			try {
 				console.log('doxxx');
 				this.device = await navigator.bluetooth.requestDevice(
-					{ filters: [{ services: [BluetoothTransport.SRD_SERVICE] }] }
+					{ filters: [{ services: [this.serviceUuid] }] }
 				);
 
 				return [this.device];
@@ -243,7 +276,7 @@ export class BluetoothTransport {
 		await this.requestPermissions();
 		try {
 			this.bleDevice = await BleClient.requestDevice({
-				services: [BluetoothTransport.SRD_SERVICE]
+				services: [this.serviceUuid]
 			});
 		}
 		catch (e) {
@@ -266,8 +299,8 @@ export class BluetoothTransport {
 		if (this.bleDevice) {
 			await BleClient.write(
 				this.bleDevice!.deviceId,
-				BluetoothTransport.SRD_SERVICE,
-				BluetoothTransport.WRITE_POINT,
+				this.serviceUuid,
+				this.rxUuid,
 				numbersToDataView(data)
 			);
 			this.busy = false;
@@ -330,8 +363,8 @@ export class BluetoothTransport {
 
 				await BleClient.write(
 					this.bleDevice!.deviceId,
-					BluetoothTransport.SRD_SERVICE,
-					BluetoothTransport.WRITE_POINT,
+					this.serviceUuid,
+					this.rxUuid,
 					numbersToDataView(data)
 				);
 			});
@@ -381,7 +414,8 @@ export class BluetoothTransport {
 						console.log(e);
 						reject(null);
 					}
-				} while (retryCount < 5);
+				}
+				while (retryCount < 5);
 			});
 		}
 

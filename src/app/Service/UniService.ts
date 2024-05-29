@@ -1,32 +1,33 @@
-import { Injectable }                                         from '@angular/core';
-import { Subscription }                                       from 'rxjs';
-import { BinarySerializer }                                   from 'src/app/BinarySerializer';
-import { BasePacket, BaseResponse, PacketType, ResponseCode } from 'src/app/Packets/BasePacket';
-import { ClockResponse }                                      from 'src/app/Packets/ClockResponse';
-import { FileContentResponse }                                from 'src/app/Packets/FileContentResponse';
-import { FileDeleteRequest }                                  from 'src/app/Packets/FileDeleteRequest';
-import { FileItemResponse }                                   from 'src/app/Packets/FileItemResponse';
-import { FileReadRequest }                                    from 'src/app/Packets/FileReadRequest';
-import { FilesystemInfoResponse }                             from 'src/app/Packets/FilesystemInfoResponse';
-import { FileWriteRequest }                                   from 'src/app/Packets/FileWriteRequest';
-import { FirmwareUpdate, FirmwareUpdateChunkSize }            from 'src/app/Packets/FirmwareUpdate';
-import { GetChipInfo }                                        from 'src/app/Packets/GetChipInfo';
-import { GetClock }                                           from 'src/app/Packets/GetClock';
-import { Ping }                                               from 'src/app/Packets/Ping';
-import { PlayRequest }                                        from 'src/app/Packets/PlayRequest';
-import { ReadEepromRequest }                                  from 'src/app/Packets/ReadEepromRequest';
-import { ReadEepromResponse }                                 from 'src/app/Packets/ReadEepromResponse';
-import { RealTimeData }                                       from 'src/app/Packets/RealTimeData';
-import { SetVolumeRequest }                                   from 'src/app/Packets/SetVolumeRequest';
-import { VescSettings }                                       from 'src/app/Packets/VescSettings';
-import { BluetoothTransport, Delay }                          from 'src/app/Service/BluetoothTransport';
-import { crc32 }                                              from 'src/app/Util/crc32';
+import { Injectable }                                                         from '@angular/core';
+import { Subscription }                                                       from 'rxjs';
+import { BinarySerializer, NumberConverter, StringConverter }                 from 'src/app/BinarySerializer';
+import { BasePacket, BaseResponse, PacketType, PreferenceType, ResponseCode } from 'src/app/Packets/BasePacket';
+import {
+	FileContentResponse
+}                                                                             from 'src/app/Packets/FileContentResponse';
+import { FileDeleteRequest }                                                  from 'src/app/Packets/FileDeleteRequest';
+import { FileItemResponse }                                                   from 'src/app/Packets/FileItemResponse';
+import { FileReadRequest }                                                    from 'src/app/Packets/FileReadRequest';
+import {
+	FilesystemInfoResponse
+}                                                                             from 'src/app/Packets/FilesystemInfoResponse';
+import { FileWriteRequest }                                                   from 'src/app/Packets/FileWriteRequest';
+import { FirmwareUpdate, FirmwareUpdateChunkSize }                            from 'src/app/Packets/FirmwareUpdate';
+import { GetChipInfo }                                                        from 'src/app/Packets/GetChipInfo';
+import { Ping }                                                               from 'src/app/Packets/Ping';
+import { VescSettings }                                                       from 'src/app/Packets/VescSettings';
+import { BluetoothTransport, Delay }                                          from 'src/app/Service/BluetoothTransport';
+import { crc32 }                                                              from 'src/app/Util/crc32';
+import { PluginsResponse }                                                    from '../Packets/PluginsResponse';
+import { PreferencePacket }                                                   from '../Packets/PreferencePacket';
+import { PreferenceItemPacket }                                               from '../Packets/PreferenceItemPacket';
 
 @Injectable({ providedIn: 'root' })
 export class UniService {
 	dataSub?: Subscription;
 
-	constructor(protected bt: BluetoothTransport) {}
+	constructor(protected bt: BluetoothTransport) {
+	}
 
 	async ping(): Promise<boolean> {
 		const ping = new Ping();
@@ -36,23 +37,34 @@ export class UniService {
 		return res[0] === ResponseCode.OK;
 	}
 
-	async getClock() {
-		const gc = new GetClock();
-		const b = BinarySerializer.serialize(gc) as number[];
-
-		const res = await this.bt.exchange(b, 1000);
-		return BinarySerializer.deserialize(ClockResponse, res);
+	async getPlugins() {
+		const res = await this.bt.exchange([PacketType.GET_PLUGINS], 1000);
+		if (res[0] === ResponseCode.OK) {
+			return BinarySerializer.deserialize(PluginsResponse, res);
+		}
+		else {
+			console.log('FAIL');
+		}
+		return false;
 	}
 
-	async getEeprom(address: number) {
-		const ee = new ReadEepromRequest();
-		ee.address = address;
-		const b = BinarySerializer.serialize(ee) as number[];
-
-		const res = await this.bt.exchange(b, 1000);
-
-		return BinarySerializer.deserialize(ReadEepromResponse, res);
-	}
+	// async getClock() {
+	// 	const gc = new GetClock();
+	// 	const b = BinarySerializer.serialize(gc) as number[];
+	//
+	// 	const res = await this.bt.exchange(b, 1000);
+	// 	return BinarySerializer.deserialize(ClockResponse, res);
+	// }
+	//
+	// async getEeprom(address: number) {
+	// 	const ee = new ReadEepromRequest();
+	// 	ee.address = address;
+	// 	const b = BinarySerializer.serialize(ee) as number[];
+	//
+	// 	const res = await this.bt.exchange(b, 1000);
+	//
+	// 	return BinarySerializer.deserialize(ReadEepromResponse, res);
+	// }
 
 	async getChipInfo() {
 		const ee = new GetChipInfo();
@@ -78,7 +90,7 @@ export class UniService {
 			if (fw.d.length < 370) {
 				fw.d = this.padArrayWithZeros(fw.d, 370);
 			}
-
+			console.log(fw);
 			const b = BinarySerializer.serialize(fw) as number[];
 			const res = await this.bt.exchange(b, 2000);
 			if (res[0] !== ResponseCode.OK) {
@@ -191,7 +203,8 @@ export class UniService {
 					console.log('Unknown Response!');
 					break;
 			}
-		} while (req.position <= totalSize - 1);
+		}
+		while (req.position <= totalSize - 1);
 
 		return this.fileCache;
 	}
@@ -211,58 +224,100 @@ export class UniService {
 		await this.bt.write([PacketType.RESTART]);
 	}
 
-	async beepTest() {
-		await this.bt.write([PacketType.BEEP_TEST]);
+	// async beepTest() {
+	// 	await this.bt.write([PacketType.BEEP_TEST]);
+	// }
+	//
+	// async tuneTest() {
+	// 	await this.bt.write([PacketType.TUNE_TEST]);
+	// }
+
+	async listSettings() {
+		return new Promise(async (resolve, reject) => {
+			const settingList: PreferenceItemPacket[] = [];
+			let settingCb = (value: number[]) => {
+				if (value.length < 3) {
+					console.log('finish');
+					this.dataSub?.unsubscribe();
+					resolve(settingList);
+					return;
+				}
+
+				const item = BinarySerializer.deserialize(PreferenceItemPacket, value);
+				settingList.push(item);
+			};
+
+			this.dataSub = this.bt.emData.subscribe(settingCb.bind(this));
+			const r = await this.bt.write([PacketType.LIST_SETTINGS]);
+		});
 	}
 
-	async tuneTest() {
-		await this.bt.write([PacketType.TUNE_TEST]);
-	}
+	async savePreference(type: PreferenceType, key: string, value: number | string | number[]) {
+		const p = new PreferencePacket();
+		p.name = key;
 
-	async getSettings() {
-		const r = await this.bt.exchange([PacketType.GET_SETTINGS], 1000);
-		const settings = BinarySerializer.deserialize(VescSettings, r);
+		p.type = type;
+		const nc = new NumberConverter();
+		switch (type) {
+			case PreferenceType.PT_I8:
+				p.value = nc.toBinary(value, { size: 1 });
+				p.length = 1;
+				break;
+			case PreferenceType.PT_U8:
+				p.value = nc.toBinary(value, { size: 1, unsigned: true });
+				p.length = 1;
+				break;
+			case PreferenceType.PT_I16:
+				p.value = nc.toBinary(value, { size: 2 });
+				p.length = 2;
+				break;
+			case PreferenceType.PT_U16:
+				p.value = nc.toBinary(value, { size: 2, unsigned: true });
+				p.length = 2;
+				break;
+			case PreferenceType.PT_I32:
+				p.value = nc.toBinary(value, { size: 4 });
+				p.length = 4;
+				break;
+			case PreferenceType.PT_U32:
+				p.value = nc.toBinary(value, { size: 4, unsigned: true });
+				p.length = 4;
+				break;
+			case PreferenceType.PT_I64:
+				p.value = nc.toBinary(value, { size: 8 });
+				p.length = 4;
+				break;
+			case PreferenceType.PT_U64:
+				p.value = nc.toBinary(value, { size: 8, unsigned: true });
+				p.length = 8;
+				break;
+			case PreferenceType.PT_STR:
+				if (typeof value !== 'string') {
+					return;
+				}
 
-		return settings;
-	}
-
-	async saveSettings(settings: VescSettings) {
-		const s = BinarySerializer.serialize(settings)!;
-		s.unshift(PacketType.SAVE_SETTINGS);
+				const sc = new StringConverter();
+				p.value = sc.toBinary(value, { size: 370 });
+				p.length = value.length;
+				break;
+			case PreferenceType.PT_BLOB:
+				if (!Array.isArray(value)) {
+					return;
+				}
+				p.length = value.length;
+				break;
+			case PreferenceType.PT_INVALID:
+			default:
+				console.error('Cannot save invalid data');
+				return;
+		}
+		const s = BinarySerializer.serialize(p)!;
+		console.log(s);
+		s.unshift(PacketType.SAVE_SETTING);
 
 		const r = await this.bt.exchange(s, 1000);
 
 		return r[0] == ResponseCode.OK;
-	}
-
-	async play(file: string) {
-		const fName = file.startsWith('/') ? file : '/' + file;
-		const req = new PlayRequest();
-		req.fileName = fName;
-
-		const b = BinarySerializer.serialize(req) as number[];
-		const r = await this.bt.exchange(b, 1000);
-
-		return r[0] == ResponseCode.OK;
-	}
-
-	async setVolume(volume: number) {
-		if (volume > 21) {
-			volume = 21;
-		}
-
-		const req = new SetVolumeRequest();
-		req.volume = volume;
-
-		const b = BinarySerializer.serialize(req) as number[];
-		const r = await this.bt.exchange(b, 1000);
-
-		return r[0] == ResponseCode.OK;
-	}
-
-	async getRealTimeData() {
-		const r = await this.bt.exchange([PacketType.GET_REALTIME_DATA], 1000);
-		return BinarySerializer.deserialize(RealTimeData, r);
 	}
 
 	async writeFirmware(f: File, progressCb: (pct: number) => void): Promise<void> {
@@ -274,11 +329,11 @@ export class UniService {
 				const packetType = value[0];
 
 				switch (packetType) {
-					case 10:
+					case ResponseCode.PROGRESS:
 						console.log(`Progress: ${ value[1] }%`);
 						progressCb(value[1]);
 						break;
-					case 7: {
+					case ResponseCode.OK: {
 						console.log('Progress: 100%');
 						console.log('Flashing finished, restarting');
 						this.restart().catch(console.error);
@@ -288,7 +343,7 @@ export class UniService {
 						resolve();
 						break;
 					}
-					case 8:
+					case ResponseCode.FAIL:
 						reject(new Error('Flashing FAILED!'));
 						console.log('Flashing FAILED!');
 						break;

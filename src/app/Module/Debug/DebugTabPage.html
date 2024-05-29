@@ -17,6 +17,7 @@
 	</ion-header>
 	<ion-button (click)="searchBt()">Search</ion-button>
 	<ion-button (click)="writeBt()">Ping</ion-button>
+	<ion-button (click)="getPlugins()">GetPlugins</ion-button>
 	<ion-button (click)="getChipInfo()">GetChipInfo</ion-button>
 	<ion-button (click)="getClock()">GetClock</ion-button>
 	<ion-button (click)="getEeprom()">GetEeprom</ion-button>
@@ -30,12 +31,8 @@
 			[(ngModel)]="volume"
 		></ion-range>
 		{{ volume }}
-		<ion-button (click)="setVolume()">set volume</ion-button>
 	</div>
 
-	<div>
-		<ion-button (click)="playTest()">playTest</ion-button>
-	</div>
 	<pre style="height: 50vh;" #scroller>
 		{{ logText }}
 	</pre>

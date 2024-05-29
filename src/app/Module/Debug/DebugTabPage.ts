@@ -51,14 +51,18 @@ export class DebugTabPage {
 		await this.uni.ping();
 	}
 
+	async getPlugins() {
+		console.log(await this.uni.getPlugins());
+	}
+
 	async getClock() {
-		const clock = await this.uni.getClock();
-		console.log(clock.toString());
+		// const clock = await this.uni.getClock();
+		// console.log(clock.toString());
 	}
 
 	async getEeprom() {
-		const eeprom = this.uni.getEeprom(0);
-		console.log(eeprom.toString());
+		// const eeprom = this.uni.getEeprom(0);
+		// console.log(eeprom.toString());
 	}
 
 	async getChipInfo() {
@@ -71,21 +75,14 @@ export class DebugTabPage {
 	}
 
 	async beepTest() {
-		await this.uni.beepTest();
+		// await this.uni.beepTest();
 	}
 
 
 	async tuneTest() {
-		await this.uni.tuneTest();
+		// await this.uni.tuneTest();
 	}
 
-	async playTest() {
-		await this.uni.play('/never.ogg');
-	}
-
-	async setVolume() {
-		await this.uni.setVolume(this.volume);
-	}
 
 	async readFile() {
 		const f = await this.uni.readFile('/beep.mp3');

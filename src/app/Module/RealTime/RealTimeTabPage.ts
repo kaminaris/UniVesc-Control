@@ -54,7 +54,7 @@ export class RealTimeTabPage implements OnInit, AfterViewInit {
 				if (!this.bt.connected) {
 					return;
 				}
-				this.data = await this.uni.getRealTimeData();
+				// this.data = await this.uni.getRealTimeData();
 			}, 1000);
 		}
 	}

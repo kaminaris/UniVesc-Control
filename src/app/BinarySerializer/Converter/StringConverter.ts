@@ -9,14 +9,24 @@ export class StringConverter implements ConverterInterface {
 	toBinary(value: any, info: BinaryFieldInfo): any {
 		const out = [...this.encoder.encode(value)];
 		if (info.size && info.size !== 'var') {
+
+			// String is longer than space for it
 			if (info.size < out.length) {
-				return out.slice(0, info.size);
+				const r = out.slice(0, info.size);
+				// last byte has to be zero
+				r[r.length - 1] = 0;
+				return r;
 			}
+
+			// String is shorter than space, fill remaining with zeros
 			if (info.size > out.length) {
 				const origLength = out.length;
 				out.length = info.size;
 				out.fill(0, origLength);
 			}
+
+			// Make sure last byte is zero regardless
+			out[out.length - 1] = 0;
 		}
 		else {
 			// null terminated string

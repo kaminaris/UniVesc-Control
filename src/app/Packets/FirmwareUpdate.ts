@@ -1,12 +1,12 @@
 import { BinaryField, BinarySerializable } from '../BinarySerializer';
-import { BasePacket }                      from './BasePacket';
+import { BasePacket, PacketType }          from './BasePacket';
 
 export const FirmwareUpdateChunkSize = 450;
 
 @BinarySerializable({ layout: 'sequential' })
 export class FirmwareUpdate extends BasePacket {
 
-	override t = 5;
+	override t = PacketType.FIRMWARE_UPDATE;
 
 	@BinaryField({ type: 'number', size: 4 })
 	chunk: number = 0;

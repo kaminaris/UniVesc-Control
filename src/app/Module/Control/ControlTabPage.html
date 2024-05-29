@@ -19,12 +19,19 @@
 	<ion-button (click)="getSettings()">
 		<ion-icon name="refresh"></ion-icon>
 	</ion-button>
-	<ion-button (click)="saveSettings()">
-		<ion-icon name="save"></ion-icon>
-	</ion-button>
 
 	<form [formGroup]="form">
 		<ion-list>
+			<ion-item>
+				<ion-input label="New Key" formControlName="newKey"></ion-input>
+				<ion-select formControlName="newType">
+					<ion-select-option *ngFor="let o of settingTypes" [value]="o.value">
+						{{ o.label }}
+					</ion-select-option>
+				</ion-select>
+				<ion-input type="number" label="Value" formControlName="newValue"></ion-input>
+				<ion-button (click)="setSetting()">Save</ion-button>
+			</ion-item>
 			<ion-item *ngFor="let k of settingsKeys">
 				<ion-input type="number" label="{{ keyToLabel(k) }}" [formControlName]="k"></ion-input>
 			</ion-item>

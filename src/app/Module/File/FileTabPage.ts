@@ -42,7 +42,7 @@ export class FileTabPage implements OnInit {
 	}
 
 	async play(item: FileItemResponse) {
-		await this.uni.play(item.fileName);
+		// await this.uni.play(item.fileName);
 	}
 
 	async download(item: FileItemResponse) {

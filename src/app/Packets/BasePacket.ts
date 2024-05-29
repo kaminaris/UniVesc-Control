@@ -10,25 +10,40 @@ export enum ResponseCode {
 }
 
 export enum PacketType {
+	// Base packets, built in
 	PING = 1,
-	GET_CLOCK,
-	GET_EEPROM,
-	SET_EEPROM,
-	FIRMWARE_UPDATE,
+	GET_PLUGINS,
 	GET_CHIP_INFO,
 	RESTART,
+
+	// Firmware update
+	FIRMWARE_UPDATE,
+
+	// Filesystem
+	GET_FILESYSTEM_INFO,
 	GET_FILE_LIST,
 	GET_FILE,
 	WRITE_FILE,
 	DELETE_FILE,
-	BEEP_TEST,
-	SET_VOLUME,
-	PLAY,
-	GET_SETTINGS,
-	SAVE_SETTINGS,
-	GET_FILESYSTEM_INFO,
-	GET_REALTIME_DATA,
-	TUNE_TEST
+
+	// Preferences
+	GET_SETTING,
+	SAVE_SETTING,
+	LIST_SETTINGS,
+}
+
+export enum PreferenceType {
+	PT_I8,
+	PT_U8,
+	PT_I16,
+	PT_U16,
+	PT_I32,
+	PT_U32,
+	PT_I64,
+	PT_U64,
+	PT_STR,
+	PT_BLOB,
+	PT_INVALID
 }
 
 @BinarySerializable({ layout: 'sequential' })
